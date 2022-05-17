@@ -1,0 +1,35 @@
+.Grid {
+  stroke: blue;
+  stroke-width: 0.02;
+  fill: none;
+}
+
+.reloadBtn {
+    margin-left: 12px;
+}
+
+.Trace circle {
+  fill: green;
+  stroke: none;
+}
+
+.Trace path {
+  fill: none;
+  stroke: green;
+  stroke-width: 0.03;
+}
+
+.NextPos circle {
+  stroke: green;
+  stroke-width: 0.1;
+  fill: none;
+}
+
+.NextPos circle:hover {
+  fill: lightgreen;
+}
+
+.StopLine {
+  stroke: red;
+  stroke-width: 0.08;
+}
