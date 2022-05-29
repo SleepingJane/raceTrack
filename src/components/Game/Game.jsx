@@ -8,8 +8,12 @@ import "./Game.css";
 import Trace from "../Trace/Trace";
 import StopLine from "../StopLine/StopLine";
 import Walls from "../Walls/Walls";
-import { intersect } from "../../utils/intersect";
+import {intersect} from "../../utils/intersect";
 import Finish from "../Finish/Finish";
+import Corner from "../Corner/Corner";
+import {PointState} from "../../logic/PointState";
+
+import {Solver} from "../../logic/Game";
 
 const walls = [
    {
@@ -25,7 +29,7 @@ const finish = [
    {
       type: "rect",
       x: 0,
-      y: 10,
+      y: 20,
       height: 1,
       width: 10
    }
@@ -48,7 +52,9 @@ class Game extends PureComponent {
          delta_y: 0,
          trace: [[props.initial_x, props.initial_y]],
          walls: walls,
-         finish: finish
+         finish: finish,
+         trackMap: props.trackMap,
+         corners: []
       };
    }
 
@@ -67,6 +73,52 @@ class Game extends PureComponent {
          this.reloadGame();
       }
       return true; // TODO; check walls
+   }
+
+   getRectanglesSize(W = 10) {
+      const rect1A = Math.floor(Math.sqrt(2*W));
+      const rect1B = Math.floor(Math.sqrt(2*W)) + 1;
+      const rect2A = Math.floor(Math.sqrt(2*W));
+      const rect2B = W;
+      return {A: {width: rect1A, height: rect1B},
+         B: {width: rect2A, height: rect2B}};
+   }
+
+   getPointsUnionOfRects(startPoint = {x: 10, y: 0}, A, B, directionHor = 'l', directionVer = 'b') {
+      const result = [];
+
+      // left bottom
+      for (let i = startPoint.x - A.width; i < startPoint.x; i++) {
+         for (let j = startPoint.y; j < startPoint.y + A.height + B.height; j++) {
+            result.push({x: i, y: j});
+         }
+      }
+
+      const solver = new Solver(5, 18, 0, 0, 45, 16);
+      const solution = solver.solveDFS();
+
+      return result;
+   }
+
+   getCorner = event => {
+      const rects = this.getRectanglesSize();
+      const rectA = rects.A;
+      const rectB = rects.B;
+
+      const res = this.getPointsUnionOfRects({x: 10, y: 0}, rectA, rectB);
+      this.setState({corners: this.getCornersView(res) || []});
+   }
+
+   getCornersView(points) {
+      return points.map(point => {
+         return {
+            type: "rect",
+            x: point.x,
+            y: point.y,
+            height: 1,
+            width: 1
+         }
+      })
    }
 
    updatePos = (x, y) => {
@@ -130,6 +182,7 @@ class Game extends PureComponent {
             <h1>RaceTrack, path length:{this.state.trace.length}</h1>
             <button onClick={this.goBack}>Undo</button>
             <button className="reloadBtn" onClick={this.reloadGame}>New game</button>
+            <button className="reloadBtn" onClick={this.getCorner}>Check</button>
             <svg
                className="Game"
                viewBox={`-2 -2 ${size_x + 4} ${size_y + 4}`}
@@ -139,6 +192,7 @@ class Game extends PureComponent {
                }}>
                <Grid size_x={size_x} size_y={size_y} />
                <Walls walls={walls} />
+               <Corner corners={this.state.corners} />
                <Finish finish={finish} />
                <Trace trace={this.state.trace} />
                <CurrentPos {...this.state} />
