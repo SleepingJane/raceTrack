@@ -4,6 +4,7 @@ export class PointState{
    private _delta_x: number = 0;
    private _delta_y: number = 0;
    private _parent: PointState|null = null;
+   private _countMove: number = 0;
    private _visited: boolean = false;
    private readonly _state: Array<Array<string|number>> = [];
 
@@ -61,5 +62,13 @@ export class PointState{
 
    set parent(value: PointState | null) {
       this._parent = value;
+   }
+
+   get countMove(): number {
+      return this._countMove;
+   }
+
+   set countMove(value: number) {
+      this._countMove = value;
    }
 }

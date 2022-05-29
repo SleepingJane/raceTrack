@@ -16,10 +16,10 @@ import {Solver} from "../../logic/Game";
 const walls = [
    {
       type: "rect",
-      x: 10,
-      y: 10,
-      height: 30,
-      width: 30
+      x: 5,
+      y: 5,
+      height: 13,
+      width: 20
    }
 ];
 
@@ -27,9 +27,9 @@ const finish = [
    {
       type: "rect",
       x: 0,
-      y: 20,
+      y: 15,
       height: 1,
-      width: 10
+      width: 5
    }
 ];
 
@@ -73,7 +73,7 @@ class Game extends PureComponent {
       return true; // TODO; check walls
    }
 
-   getRectanglesSize(W = 10) {
+   getRectanglesSize(W = 5) {
       const rect1A = Math.floor(Math.sqrt(2*W));
       const rect1B = Math.floor(Math.sqrt(2*W)) + 1;
       const rect2A = Math.floor(Math.sqrt(2*W));
@@ -82,20 +82,44 @@ class Game extends PureComponent {
          B: {width: rect2A, height: rect2B}};
    }
 
-   getPointsUnionOfRects(startPoint = {x: 10, y: 0}, A, B, directionHor = 'l', directionVer = 'b') {
+   getPointsUnionOfRects(startPoint = {x: 5, y: 0}, A, B, directionHor = 'l', directionVer = 'b') {
       const result = [];
+      const direction = directionHor + directionVer;
 
-      // left bottom
-      for (let i = startPoint.x - A.width; i < startPoint.x; i++) {
-         for (let j = startPoint.y; j < startPoint.y + A.height + B.height; j++) {
-            result.push({x: i, y: j});
-         }
+      switch (direction) {
+         case 'lb':
+            // левый верхний прямоугольник
+            for (let i = startPoint.x - A.width; i < startPoint.x; i++) {
+               for (let j = startPoint.y; j < startPoint.y + A.height + B.height; j++) {
+                  result.push({x: i, y: j});
+               }
+            }
+            break;
+         case 'rt':
+            // правый нижний прямоуольник
+            for (let i = startPoint.x; i < startPoint.x + A.width; i++) {
+               for (let j = startPoint.y; j > startPoint.y - A.height - B.height; j--) {
+                  result.push({x: i, y: j});
+               }
+            }
+            break;
+         case 'll':
+            // правый верхний
+            for (let i = startPoint.x; i > startPoint.x - A.height - B.height; i--) {
+               for (let j = startPoint.y; j > startPoint.y - A.width; j--) {
+                  result.push({x: i, y: j});
+               }
+            }
+            break;
+         case 'rb':
+            // левый нижний
+            for (let i = startPoint.x; i < startPoint.x + A.height + B.height; i++) {
+               for (let j = startPoint.y; j < startPoint.y + A.width; j++) {
+                  result.push({x: i, y: j});
+               }
+            }
+            break;
       }
-
-      const solver = new Solver(5, 20, 0, 0, 9, 14);
-      const solution = solver.bfs();
-
-      this.solutionView(solution);
 
       return result;
    }
@@ -129,13 +153,67 @@ class Game extends PureComponent {
       }
    }
 
-   getCorner = event => {
+   startSolve = event => {
+      // Получение размеров прямоугольников
       const rects = this.getRectanglesSize();
       const rectA = rects.A;
       const rectB = rects.B;
 
-      const res = this.getPointsUnionOfRects({x: 10, y: 0}, rectA, rectB);
-      this.setState({corners: this.getCornersView(res) || []});
+      const leftTopRegion = this.getPointsUnionOfRects({x: 5, y: 0}, rectA, rectB, 'l', 'b');
+      const rightTopRegion = this.getPointsUnionOfRects({x: 29, y: 4}, rectA, rectB, 'l', 'l');
+      const leftBottomRegion = this.getPointsUnionOfRects({x: 0, y: 18}, rectA, rectB, 'r', 'b');
+      const rightBottomRegion = this.getPointsUnionOfRects({x: 25, y: 22}, rectA, rectB, 'r', 't');
+
+      const cornerRegions = [
+         ...leftTopRegion,
+         ...rightTopRegion,
+         ...leftBottomRegion,
+         ...rightBottomRegion
+      ]
+
+      this.setState({corners: this.getCornersView(cornerRegions) || []});
+
+      const solver = new Solver(2, 15, 0, 0, 4, 4);
+      let solution = solver.bfs();
+
+      let minLeftSol = solution;
+      let minRightSol = null;
+      let min3 = null;
+      let min4 = null;
+      outer: while (!min4) {
+         for (let i = 0; i < leftTopRegion.length; i++) {
+            const res1 = new Solver(2, 15, 0, 0, leftTopRegion[i].x, leftTopRegion[i].y).bfs();
+            if (res1) {
+               minLeftSol = res1;
+               for (let j = 0; j < rightTopRegion.length; j++) {
+                  const res2 = new Solver(res1.x, res1.y, res1.delta_x, res1.delta_y, rightTopRegion[j].x, rightTopRegion[j].y).bfs();
+                  if (res2) {
+                     minRightSol = res2;
+                     for (let k = 0; k < rightBottomRegion.length; k++) {
+                        const res3 = new Solver(res2.x, res2.y, res2.delta_x, res2.delta_y, rightBottomRegion[k].x, rightBottomRegion[k].y).bfs();
+                        if (res3) {
+                           min3 = res3;
+                           for (let m = 0; m < leftBottomRegion.length; m++) {
+                              const res4 = new Solver(res3.x, res3.y, res3.delta_x, res3.delta_y,
+                                 leftBottomRegion[m].x, leftBottomRegion[m].y).bfs();
+                              if (res4) {
+                                 min4 = res4;
+                                 break outer;
+                              }
+                           }
+                        }
+                     }
+                  }
+               }
+            }
+         }
+         break outer;
+      }
+
+      this.solutionView(minLeftSol);
+      this.solutionView(minRightSol);
+      this.solutionView(min3);
+      this.solutionView(min4);
    }
 
    getCornersView(points) {
@@ -211,7 +289,7 @@ class Game extends PureComponent {
             <h1>RaceTrack, path length:{this.state.trace.length}</h1>
             <button onClick={this.goBack}>Undo</button>
             <button className="reloadBtn" onClick={this.reloadGame}>New game</button>
-            <button className="reloadBtn" onClick={this.getCorner}>Check</button>
+            <button className="reloadBtn" onClick={this.startSolve}>Check</button>
             <svg
                className="Game"
                viewBox={`-2 -2 ${size_x + 4} ${size_y + 4}`}

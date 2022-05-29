@@ -5,10 +5,10 @@ import {intersect} from "../utils/intersect";
 const walls = [
    {
       type: "rect",
-      x: 10,
-      y: 10,
-      height: 30,
-      width: 30
+      x: 5,
+      y: 5,
+      height: 13,
+      width: 20
    }
 ];
 
@@ -16,9 +16,9 @@ const finish = [
    {
       type: "rect",
       x: 0,
-      y: 20,
+      y: 15,
       height: 1,
-      width: 10
+      width: 5
    }
 ];
 
@@ -72,7 +72,7 @@ export class Solver {
       const isFinish = finish.some(finishPoint => intersect(finishPoint, [[currentNode.x, currentNode.y], [nexNode.x, nexNode.y]]));
       const isWall = walls.some(wall => intersect(wall, [[currentNode.x, currentNode.y], [nexNode.x, nexNode.y]]));
 
-      const isExternal = nexNode.x <= 0 || nexNode.y <= 0 || nexNode.x >= 50 || nexNode.y >= 50;
+      const isExternal = nexNode.x <= 0 || nexNode.y <= 0 || nexNode.x >= 25 || nexNode.y >= 25;
 
       if (nexNode.x > currentNode.x + currentNode.delta_x + 1 || nexNode.x < currentNode.x + currentNode.delta_x - 1) return false;
       if (nexNode.y > currentNode.y + currentNode.delta_y + 1 || nexNode.y < currentNode.y + currentNode.delta_y - 1) return false;
@@ -116,8 +116,10 @@ export class Solver {
 
    public bfs(): void | any {
       this.visited = [];
+      this.queue = [];
       const start_node = this.start_node;
       const goal_node = this.goal_node;
+      let count = 0;
 
       this.queue.push(start_node);
       this.visited.push(start_node);
@@ -138,6 +140,8 @@ export class Solver {
             if (!neighbours[i].visited) {
                if (this.isValidMove(currentState, neighbours[i])) {
                   neighbours[i].parent = currentState;
+                  neighbours[i].countMove = count;
+                  count = count + 1;
                   this.queue.push(neighbours[i]);
                }
                neighbours[i].visited = true;

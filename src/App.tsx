@@ -5,10 +5,10 @@ import Game from "./components/Game/Game";
 class App extends Component {
    render() {
       const gameProps = {
-         size_x: 50,
-         size_y: 50,
-         initial_x: 5,
-         initial_y: 20
+         size_x: 30,
+         size_y: 23,
+         initial_x: 2,
+         initial_y: 15
       };
       return (
          <div className="App">
