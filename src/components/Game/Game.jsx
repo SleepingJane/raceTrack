@@ -6,12 +6,10 @@ import NextPos from "../NextPos/NextPos";
 
 import "./Game.css";
 import Trace from "../Trace/Trace";
-import StopLine from "../StopLine/StopLine";
 import Walls from "../Walls/Walls";
 import {intersect} from "../../utils/intersect";
 import Finish from "../Finish/Finish";
 import Corner from "../Corner/Corner";
-import {PointState} from "../../logic/PointState";
 
 import {Solver} from "../../logic/Game";
 
@@ -94,10 +92,41 @@ class Game extends PureComponent {
          }
       }
 
-      const solver = new Solver(5, 18, 0, 0, 45, 16);
-      const solution = solver.solveDFS();
+      const solver = new Solver(5, 20, 0, 0, 9, 14);
+      const solution = solver.bfs();
+
+      this.solutionView(solution);
 
       return result;
+   }
+
+   solutionView(solution) {
+      if (!solution) {
+         return;
+      }
+
+      let res = [];
+      res.push(solution);
+
+      let parent = solution.parent;
+      while (parent) {
+         res.push(parent);
+         parent = parent.parent;
+      }
+
+      res = res.reverse();
+
+      for (let i = 0; i < res.length; i++) {
+         this.setState(s => {
+            return {
+               trace: [...s.trace, [res[i].x, res[i].y]],
+               x: res[i].x,
+               y: res[i].y,
+               delta_x: res[i].x - s.x,
+               delta_y: res[i].y - s.y
+            };
+         });
+      }
    }
 
    getCorner = event => {
@@ -196,7 +225,6 @@ class Game extends PureComponent {
                <Finish finish={finish} />
                <Trace trace={this.state.trace} />
                <CurrentPos {...this.state} />
-               <StopLine {...this.state} {...this.props} />
                <NextPos {...this.state} />
             </svg>
          </div>
