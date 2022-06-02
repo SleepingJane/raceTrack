@@ -23,5 +23,6 @@ function intersect_segment(line1, line2) {
 
   // Ограничительные рамки
   if (!(A1x <= B2x && A2x >= B1x && A1y <= B2y && A2y >= B1y)) return false;
+
   return true;
 }

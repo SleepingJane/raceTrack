@@ -5,10 +5,10 @@ import {intersect} from "../utils/intersect";
 const walls = [
    {
       type: "rect",
-      x: 5,
-      y: 5,
-      height: 13,
-      width: 20
+      x: 3,
+      y: 3,
+      height: 2,
+      width: 5
    }
 ];
 
@@ -16,16 +16,16 @@ const finish = [
    {
       type: "rect",
       x: 0,
-      y: 15,
+      y: 4,
       height: 1,
-      width: 5
+      width: 3
    }
 ];
 
 export class Solver {
-   constructor(start_x: number, start_y: number, speed_x: number, speed_y: number, goal_x: number, goal_y: number) {
+   constructor(start_x: number, start_y: number, speed_x: number, speed_y: number, goal_x?: number, goal_y?: number) {
       this.start_node = new PointState(start_x, start_y, speed_x, speed_y);
-      this.goal_node = new PointState(goal_x, goal_y, 0, 0);
+      this.goal_node = new PointState(goal_x || 0, goal_y || 0, 0, 0);
       this.bfs = this.bfs.bind(this);
       this.solveDFS = this.solveDFS.bind(this);
    }
@@ -35,6 +35,8 @@ export class Solver {
 
    protected queue: Array<PointState> = [];
    protected visited: any = [];
+
+   protected stateGraph: Array<PointState> = [];
 
 
    public isEndGame(currentNode: PointState, goalNode: PointState): boolean {
@@ -54,14 +56,21 @@ export class Solver {
       neighbours.push(new PointState(currentNode.x + currentNode.delta_x + 0, currentNode.y + currentNode.delta_y - 1, currentNode.delta_x + 0, currentNode.delta_y - 1));
       neighbours.push(new PointState(currentNode.x + currentNode.delta_x - 1, currentNode.y + currentNode.delta_y - 1, currentNode.delta_x - 1, currentNode.delta_y - 1));
 
-      neighbours.forEach((item: PointState) => {
+      /*neighbours.forEach((item: PointState) => {
          item.visited = this.isVisited(item);
-      })
+      })*/
       return neighbours;
    }
 
    private isEqualNode(firstNode: PointState, secondNode: PointState): boolean {
       return firstNode.x === secondNode.x && firstNode.y === secondNode.y;
+   }
+
+   intersectWall(x: number, y: number) {
+      if (x >= walls[0].x && x <= walls[0].x + walls[0].width && y >= walls[0].y && y <= walls[0].y + walls[0].height) {
+         return true;
+      }
+      return false;
    }
 
    private isVisited(node: PointState): boolean {
@@ -70,10 +79,10 @@ export class Solver {
 
    private isValidMove(currentNode: PointState, nexNode: PointState): boolean {
       const isFinish = finish.some(finishPoint => intersect(finishPoint, [[currentNode.x, currentNode.y], [nexNode.x, nexNode.y]]));
-      const isWall = walls.some(wall => intersect(wall, [[currentNode.x, currentNode.y], [nexNode.x, nexNode.y]]));
+      const isWall = this.intersectWall(currentNode.x, currentNode.y);
+      const isExternal = nexNode.x <= 0 || nexNode.y <= 0 || nexNode.x >= 10 || nexNode.y >= 7;
 
-      const isExternal = nexNode.x <= 0 || nexNode.y <= 0 || nexNode.x >= 25 || nexNode.y >= 25;
-
+      if (nexNode.x === currentNode.x && nexNode.y === currentNode.y) return false;
       if (nexNode.x > currentNode.x + currentNode.delta_x + 1 || nexNode.x < currentNode.x + currentNode.delta_x - 1) return false;
       if (nexNode.y > currentNode.y + currentNode.delta_y + 1 || nexNode.y < currentNode.y + currentNode.delta_y - 1) return false;
 
@@ -114,6 +123,59 @@ export class Solver {
       return null;
    }
 
+   public graphState(): any {
+      this.queue = [];
+      const start_node = this.start_node;
+      const goal_node = this.goal_node;
+      let count = 0;
+
+      const start = new Date().getTime();
+      let end = new Date().getTime();
+
+      this.queue.push(start_node);
+
+      const test: any = [];
+
+      start_node.visited = true;
+
+      while (this.queue.length !== 0) {
+         end = new Date().getTime();
+         let currentState: PointState = this.queue.shift() as PointState;
+         if (end - start > 100000) {
+            return test;
+         }
+         if (this.isEndGame(currentState, goal_node)
+            || this.isEndGame(currentState, new PointState(1, goal_node.y, 0, 0))) {
+            console.log("You win!");
+            console.log(currentState);
+            test.push(currentState);
+         }
+
+         const neighbours: PointState[] = this.getNeighbours(currentState);
+         for (let i = 0; i < neighbours.length; i++) {
+            if (this.isValidMove(currentState, neighbours[i])) {
+               neighbours[i].parent = currentState;
+               this.queue.push(neighbours[i]);
+            }
+         }
+      }
+
+      return test;
+   }
+
+   public getMinSolutionPath(solution: PointState[]): any {
+      if (!solution.length) {
+         return null;
+      }
+      let min = solution[0];
+      for (let i = 0; i < solution.length; i++) {
+         if (solution[i].deep < min.deep) {
+            min = solution[i];
+         }
+      }
+      return min;
+   }
+
    public bfs(): void | any {
       this.visited = [];
       this.queue = [];
@@ -121,15 +183,19 @@ export class Solver {
       const goal_node = this.goal_node;
       let count = 0;
 
+      const start = new Date().getTime();
+      let end = new Date().getTime();
+
       this.queue.push(start_node);
       this.visited.push(start_node);
 
       start_node.visited = true;
 
       while (this.queue.length !== 0) {
+         end = new Date().getTime();
          let currentState: PointState = this.queue.shift() as PointState;
-
-         if (this.isEndGame(currentState, goal_node)) {
+         if (this.isEndGame(currentState, goal_node)
+            || this.isEndGame(currentState, new PointState(1, goal_node.y, 0, 0))) {
             console.log("You win!");
             console.log(currentState);
             return currentState;
@@ -140,8 +206,6 @@ export class Solver {
             if (!neighbours[i].visited) {
                if (this.isValidMove(currentState, neighbours[i])) {
                   neighbours[i].parent = currentState;
-                  neighbours[i].countMove = count;
-                  count = count + 1;
                   this.queue.push(neighbours[i]);
                }
                neighbours[i].visited = true;

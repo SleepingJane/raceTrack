@@ -12,14 +12,15 @@ import Finish from "../Finish/Finish";
 import Corner from "../Corner/Corner";
 
 import {Solver} from "../../logic/Game";
+import {PointState} from "../../logic/PointState";
 
 const walls = [
    {
       type: "rect",
-      x: 5,
-      y: 5,
-      height: 13,
-      width: 20
+      x: 3,
+      y: 3,
+      height: 2,
+      width: 5
    }
 ];
 
@@ -27,9 +28,9 @@ const finish = [
    {
       type: "rect",
       x: 0,
-      y: 15,
+      y: 4,
       height: 1,
-      width: 5
+      width: 3
    }
 ];
 
@@ -52,14 +53,20 @@ class Game extends PureComponent {
          walls: walls,
          finish: finish,
          trackMap: props.trackMap,
-         corners: []
+         corners: [],
+         currentSolution: [],
+         currentSolutionIndex: 0
       };
+   }
+
+   intersectWall(x, y) {
+      return x >= walls[0].x && x <= walls[0].x + walls[0].width && y >= walls[0].y && y <= walls[0].y + walls[0].height;
    }
 
    isValidNextPos(x, y) {
       const s = this.state;
       const isFinish = s.finish.some(finishPoint => intersect(finishPoint, [[s.x, s.y], [x, y]]));
-      const isWall = s.walls.some(wall => intersect(wall, [[s.x, s.y], [x, y]]));
+      const isWall = this.intersectWall(x, y);
       const isWin = s.y > s.finish[0].y + 1 && y <= s.finish[0].y + 1;
       if (x > s.x + s.delta_x + 1 || x < s.x + s.delta_x - 1) return false;
       if (y > s.y + s.delta_y + 1 || y < s.y + s.delta_y - 1) return false;
@@ -73,7 +80,7 @@ class Game extends PureComponent {
       return true; // TODO; check walls
    }
 
-   getRectanglesSize(W = 5) {
+   getRectanglesSize(W = 3) {
       const rect1A = Math.floor(Math.sqrt(2*W));
       const rect1B = Math.floor(Math.sqrt(2*W)) + 1;
       const rect2A = Math.floor(Math.sqrt(2*W));
@@ -82,7 +89,7 @@ class Game extends PureComponent {
          B: {width: rect2A, height: rect2B}};
    }
 
-   getPointsUnionOfRects(startPoint = {x: 5, y: 0}, A, B, directionHor = 'l', directionVer = 'b') {
+   getPointsUnionOfRects(startPoint = {x: 3, y: 0}, A, B, directionHor = 'l', directionVer = 'b') {
       const result = [];
       const direction = directionHor + directionVer;
 
@@ -159,8 +166,8 @@ class Game extends PureComponent {
       const rectA = rects.A;
       const rectB = rects.B;
 
-      const leftTopRegion = this.getPointsUnionOfRects({x: 5, y: 0}, rectA, rectB, 'l', 'b');
-      const rightTopRegion = this.getPointsUnionOfRects({x: 29, y: 4}, rectA, rectB, 'l', 'l');
+      const leftTopRegion = this.getPointsUnionOfRects({x: 3, y: 0}, rectA, rectB, 'l', 'b');
+      const rightTopRegion = this.getPointsUnionOfRects({x: 8, y: 4}, rectA, rectB, 'l', 'l');
       const leftBottomRegion = this.getPointsUnionOfRects({x: 0, y: 18}, rectA, rectB, 'r', 'b');
       const rightBottomRegion = this.getPointsUnionOfRects({x: 25, y: 22}, rectA, rectB, 'r', 't');
 
@@ -173,9 +180,10 @@ class Game extends PureComponent {
 
       this.setState({corners: this.getCornersView(cornerRegions) || []});
 
-      const solver = new Solver(2, 15, 0, 0, 4, 4);
-      let solution = solver.bfs();
+      const solver = new Solver(2, 4, 0, 0, 2, 5);
+      let solution = solver.graphState();
 
+      /*
       let minLeftSol = solution;
       let minRightSol = null;
       let min3 = null;
@@ -213,7 +221,28 @@ class Game extends PureComponent {
       this.solutionView(minLeftSol);
       this.solutionView(minRightSol);
       this.solutionView(min3);
-      this.solutionView(min4);
+      this.solutionView(min4);*/
+      if (solution.length) {
+         this.setState({
+            currentSolutionIndex: 0,
+            currentSolution: solution
+         });
+
+         this.solutionView(solution[0]);
+      }
+   }
+
+   getMinSolutionPath(solution) {
+      if (!solution.length) {
+         return null;
+      }
+      let min = solution[0];
+      for (let i = 0; i < solution.length; i++) {
+         if (solution[i].deep < min.deep) {
+            min = solution[i];
+         }
+      }
+      return min;
    }
 
    getCornersView(points) {
@@ -240,6 +269,24 @@ class Game extends PureComponent {
          };
       });
    };
+
+   solutionChange = event => {
+      this.reloadGame();
+      this.solutionView(this.state.currentSolution[this.state.currentSolutionIndex + 1]);
+
+      this.setState(s => {
+         return { currentSolutionIndex: s.currentSolutionIndex + 1 }
+      });
+   }
+
+   optimalSolutionView = event => {
+      this.reloadGame();
+      const solution = this.getMinSolutionPath(this.state.currentSolution);
+
+      if (solution) {
+         this.solutionView(solution);
+      }
+   }
 
    reloadGame = event => {
       this.setState({
@@ -290,6 +337,8 @@ class Game extends PureComponent {
             <button onClick={this.goBack}>Undo</button>
             <button className="reloadBtn" onClick={this.reloadGame}>New game</button>
             <button className="reloadBtn" onClick={this.startSolve}>Check</button>
+            <button className="reloadBtn" onClick={this.solutionChange}>Next solution</button>
+            <button className="reloadBtn" onClick={this.optimalSolutionView}>View optimal solution</button>
             <svg
                className="Game"
                viewBox={`-2 -2 ${size_x + 4} ${size_y + 4}`}
