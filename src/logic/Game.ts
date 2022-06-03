@@ -1,26 +1,7 @@
 import {PointState} from "./PointState";
 import React from "react";
 import {intersect} from "../utils/intersect";
-
-const walls = [
-   {
-      type: "rect",
-      x: 3,
-      y: 3,
-      height: 2,
-      width: 5
-   }
-];
-
-const finish = [
-   {
-      type: "rect",
-      x: 0,
-      y: 4,
-      height: 1,
-      width: 3
-   }
-];
+import {finish, walls} from "../App";
 
 export class Solver {
    constructor(start_x: number, start_y: number, speed_x: number, speed_y: number, goal_x?: number, goal_y?: number) {
@@ -56,9 +37,9 @@ export class Solver {
       neighbours.push(new PointState(currentNode.x + currentNode.delta_x + 0, currentNode.y + currentNode.delta_y - 1, currentNode.delta_x + 0, currentNode.delta_y - 1));
       neighbours.push(new PointState(currentNode.x + currentNode.delta_x - 1, currentNode.y + currentNode.delta_y - 1, currentNode.delta_x - 1, currentNode.delta_y - 1));
 
-      /*neighbours.forEach((item: PointState) => {
+      neighbours.forEach((item: PointState) => {
          item.visited = this.isVisited(item);
-      })*/
+      })
       return neighbours;
    }
 
@@ -127,28 +108,26 @@ export class Solver {
       this.queue = [];
       const start_node = this.start_node;
       const goal_node = this.goal_node;
-      let count = 0;
 
       const start = new Date().getTime();
       let end = new Date().getTime();
 
       this.queue.push(start_node);
-
-      const test: any = [];
-
-      start_node.visited = true;
+      const graph: PointState[] = [];
 
       while (this.queue.length !== 0) {
          end = new Date().getTime();
          let currentState: PointState = this.queue.shift() as PointState;
          if (end - start > 100000) {
-            return test;
+            alert(`Time: ${end - start}`);
+            this.stateGraph = graph;
+            return graph;
          }
          if (this.isEndGame(currentState, goal_node)
             || this.isEndGame(currentState, new PointState(1, goal_node.y, 0, 0))) {
             console.log("You win!");
             console.log(currentState);
-            test.push(currentState);
+            graph.push(currentState);
          }
 
          const neighbours: PointState[] = this.getNeighbours(currentState);
@@ -160,7 +139,7 @@ export class Solver {
          }
       }
 
-      return test;
+      return graph;
    }
 
    public getMinSolutionPath(solution: PointState[]): any {

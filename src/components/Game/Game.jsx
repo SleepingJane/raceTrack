@@ -12,34 +12,15 @@ import Finish from "../Finish/Finish";
 import Corner from "../Corner/Corner";
 
 import {Solver} from "../../logic/Game";
-import {PointState} from "../../logic/PointState";
-
-const walls = [
-   {
-      type: "rect",
-      x: 3,
-      y: 3,
-      height: 2,
-      width: 5
-   }
-];
-
-const finish = [
-   {
-      type: "rect",
-      x: 0,
-      y: 4,
-      height: 1,
-      width: 3
-   }
-];
+import {finish, walls} from "../../App";
 
 class Game extends PureComponent {
    static propTypes = {
       size_x: PropTypes.number.isRequired,
       size_y: PropTypes.number.isRequired,
       initial_x: PropTypes.number.isRequired,
-      initial_y: PropTypes.number.isRequired
+      initial_y: PropTypes.number.isRequired,
+      W: PropTypes.number.isRequired
    };
 
    constructor(props) {
@@ -47,6 +28,7 @@ class Game extends PureComponent {
       this.state = {
          x: props.initial_x,
          y: props.initial_y,
+         W: props.W,
          delta_x: 0,
          delta_y: 0,
          trace: [[props.initial_x, props.initial_y]],
@@ -80,21 +62,22 @@ class Game extends PureComponent {
       return true; // TODO; check walls
    }
 
-   getRectanglesSize(W = 3) {
-      const rect1A = Math.floor(Math.sqrt(2*W));
-      const rect1B = Math.floor(Math.sqrt(2*W)) + 1;
-      const rect2A = Math.floor(Math.sqrt(2*W));
-      const rect2B = W;
+   getRectanglesSize() {
+      const rect1A = Math.floor(Math.sqrt(2 * this.state.W));
+      const rect1B = Math.floor(Math.sqrt(2 * this.state.W)) + 1;
+      const rect2A = Math.floor(Math.sqrt(2 * this.state.W));
+      const rect2B = this.state.W;
       return {A: {width: rect1A, height: rect1B},
          B: {width: rect2A, height: rect2B}};
    }
 
-   getPointsUnionOfRects(startPoint = {x: 3, y: 0}, A, B, directionHor = 'l', directionVer = 'b') {
+   getPointsUnionOfRects(A, B, directionHor = 'l', directionVer = 'b') {
       const result = [];
       const direction = directionHor + directionVer;
-
+      let startPoint = {x: 0, y: 0};
       switch (direction) {
          case 'lb':
+            startPoint = {x: 0 + this.state.W, y: 0};
             // левый верхний прямоугольник
             for (let i = startPoint.x - A.width; i < startPoint.x; i++) {
                for (let j = startPoint.y; j < startPoint.y + A.height + B.height; j++) {
@@ -103,6 +86,7 @@ class Game extends PureComponent {
             }
             break;
          case 'rt':
+            startPoint = {x: this.props.size_x - this.state.W, y: this.props.size_y - 1};
             // правый нижний прямоуольник
             for (let i = startPoint.x; i < startPoint.x + A.width; i++) {
                for (let j = startPoint.y; j > startPoint.y - A.height - B.height; j--) {
@@ -111,6 +95,7 @@ class Game extends PureComponent {
             }
             break;
          case 'll':
+            startPoint = {x: this.props.size_x - 1, y: this.state.W - 1};
             // правый верхний
             for (let i = startPoint.x; i > startPoint.x - A.height - B.height; i--) {
                for (let j = startPoint.y; j > startPoint.y - A.width; j--) {
@@ -119,6 +104,7 @@ class Game extends PureComponent {
             }
             break;
          case 'rb':
+            startPoint = {x: 0, y: this.props.size_y - this.state.W};
             // левый нижний
             for (let i = startPoint.x; i < startPoint.x + A.height + B.height; i++) {
                for (let j = startPoint.y; j < startPoint.y + A.width; j++) {
@@ -166,10 +152,10 @@ class Game extends PureComponent {
       const rectA = rects.A;
       const rectB = rects.B;
 
-      const leftTopRegion = this.getPointsUnionOfRects({x: 3, y: 0}, rectA, rectB, 'l', 'b');
-      const rightTopRegion = this.getPointsUnionOfRects({x: 8, y: 4}, rectA, rectB, 'l', 'l');
-      const leftBottomRegion = this.getPointsUnionOfRects({x: 0, y: 18}, rectA, rectB, 'r', 'b');
-      const rightBottomRegion = this.getPointsUnionOfRects({x: 25, y: 22}, rectA, rectB, 'r', 't');
+      const leftTopRegion = this.getPointsUnionOfRects(rectA, rectB, 'l', 'b');
+      const rightTopRegion = this.getPointsUnionOfRects(rectA, rectB, 'l', 'l');
+      const leftBottomRegion = this.getPointsUnionOfRects(rectA, rectB, 'r', 'b');
+      const rightBottomRegion = this.getPointsUnionOfRects(rectA, rectB, 'r', 't');
 
       const cornerRegions = [
          ...leftTopRegion,
@@ -180,7 +166,7 @@ class Game extends PureComponent {
 
       this.setState({corners: this.getCornersView(cornerRegions) || []});
 
-      const solver = new Solver(2, 4, 0, 0, 2, 5);
+      const solver = new Solver(this.props.initial_x, this.props.initial_y, 0, 0, 2, 5);
       let solution = solver.graphState();
 
       /*
@@ -222,6 +208,7 @@ class Game extends PureComponent {
       this.solutionView(minRightSol);
       this.solutionView(min3);
       this.solutionView(min4);*/
+
       if (solution.length) {
          this.setState({
             currentSolutionIndex: 0,
@@ -333,7 +320,7 @@ class Game extends PureComponent {
       const { size_x, size_y } = this.props;
       return (
          <div className="Game">
-            <h1>RaceTrack, path length:{this.state.trace.length}</h1>
+            <h1>RaceTrack</h1>
             <button onClick={this.goBack}>Undo</button>
             <button className="reloadBtn" onClick={this.reloadGame}>New game</button>
             <button className="reloadBtn" onClick={this.startSolve}>Check</button>
