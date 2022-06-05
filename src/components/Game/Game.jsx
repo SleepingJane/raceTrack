@@ -12,7 +12,7 @@ import Finish from "../Finish/Finish";
 import Corner from "../Corner/Corner";
 
 import {Solver} from "../../logic/Game";
-import {finish, walls} from "../../App";
+import {finish, size_map, walls} from "../../App";
 
 class Game extends PureComponent {
    static propTypes = {
@@ -39,20 +39,43 @@ class Game extends PureComponent {
          currentSolution: [],
          currentSolutionIndex: 0
       };
+      this.isFinish = this.isFinish.bind(this);
    }
 
    intersectWall(x, y) {
       return x >= walls[0].x && x <= walls[0].x + walls[0].width && y >= walls[0].y && y <= walls[0].y + walls[0].height;
    }
 
+   isFinish(x, y) {
+      const s = this.state;
+      if (x === this.props.initial_x && y === this.props.initial_y) {
+         return false;
+      }
+      const isFinish = s.finish.some(finishPoint => intersect(finishPoint, [[s.x, s.y], [x, y]]));
+      return isFinish;
+   }
+
+   intersectWall(x, y) {
+      let flag = false;
+      walls.forEach((wall) => {
+         if (x >= wall.x && x <= wall.x + wall.width && y >= wall.y && y <= wall.y + wall.height) {
+            flag = true;
+         }
+      });
+      return flag;
+   }
+
    isValidNextPos(x, y) {
       const s = this.state;
       const isFinish = s.finish.some(finishPoint => intersect(finishPoint, [[s.x, s.y], [x, y]]));
       const isWall = this.intersectWall(x, y);
+      const isExternal = x <= 0 || y <= 0 || x >= size_map.size_x || y >= size_map.size_y;
+
       const isWin = s.y > s.finish[0].y + 1 && y <= s.finish[0].y + 1;
+      if (x === s.x && y === s.y) return false;
       if (x > s.x + s.delta_x + 1 || x < s.x + s.delta_x - 1) return false;
       if (y > s.y + s.delta_y + 1 || y < s.y + s.delta_y - 1) return false;
-      if (isWall || isFinish) {
+      if (isWall || isFinish || isExternal) {
          return false;
       }
       if (isWin) {
@@ -164,7 +187,7 @@ class Game extends PureComponent {
          ...rightBottomRegion
       ]
 
-      this.setState({corners: this.getCornersView(cornerRegions) || []});
+     // this.setState({corners: this.getCornersView(cornerRegions) || []});
 
       const solver = new Solver(this.props.initial_x, this.props.initial_y, 0, 0, 2, 5);
       let solution = solver.graphState();
@@ -339,7 +362,7 @@ class Game extends PureComponent {
                <Finish finish={finish} />
                <Trace trace={this.state.trace} />
                <CurrentPos {...this.state} />
-               <NextPos {...this.state} />
+               {!this.isFinish(this.state.x, this.state.y) ? <NextPos {...this.state} /> : null}
             </svg>
          </div>
       );

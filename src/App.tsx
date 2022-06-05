@@ -1,35 +1,20 @@
 import React, { Component } from "react";
 import "./App.css";
 import Game from "./components/Game/Game";
+import {maps} from "./TrackSource";
 
-export const walls = [
-   {
-      type: "rect",
-      x: 3,
-      y: 3,
-      height: 2,
-      width: 5
-   }
-];
-
-export const finish = [
-   {
-      type: "rect",
-      x: 0,
-      y: 4,
-      height: 1,
-      width: 3
-   }
-];
+export const walls = maps[2].walls;
+export const finish = maps[2].finish;
+export const size_map = maps[2].size_map;
 
 class App extends Component {
    render() {
       const gameProps = {
-         size_x: 11,
-         size_y: 8,
-         initial_x: 2,
-         initial_y: 4,
-         W: 3
+         size_x: maps[2].size_map.size_x,
+         size_y: maps[2].size_map.size_y,
+         initial_x: maps[2].size_map.initial_x,
+         initial_y: maps[2].size_map.initial_y,
+         W: maps[2].size_map.W
       };
       return (
          <div className="App">

@@ -1,7 +1,7 @@
 import {PointState} from "./PointState";
 import React from "react";
 import {intersect} from "../utils/intersect";
-import {finish, walls} from "../App";
+import {finish, size_map, walls} from "../App";
 
 export class Solver {
    constructor(start_x: number, start_y: number, speed_x: number, speed_y: number, goal_x?: number, goal_y?: number) {
@@ -48,10 +48,13 @@ export class Solver {
    }
 
    intersectWall(x: number, y: number) {
-      if (x >= walls[0].x && x <= walls[0].x + walls[0].width && y >= walls[0].y && y <= walls[0].y + walls[0].height) {
-         return true;
-      }
-      return false;
+      let flag = false;
+      walls.forEach((wall) => {
+         if (x >= wall.x && x <= wall.x + wall.width && y >= wall.y && y <= wall.y + wall.height) {
+            flag = true;
+         }
+      });
+      return flag;
    }
 
    private isVisited(node: PointState): boolean {
@@ -60,9 +63,9 @@ export class Solver {
 
    private isValidMove(currentNode: PointState, nexNode: PointState): boolean {
       const isFinish = finish.some(finishPoint => intersect(finishPoint, [[currentNode.x, currentNode.y], [nexNode.x, nexNode.y]]));
-      const isWall = this.intersectWall(currentNode.x, currentNode.y);
-      const isExternal = nexNode.x <= 0 || nexNode.y <= 0 || nexNode.x >= 10 || nexNode.y >= 7;
-
+      const isWall = this.intersectWall(nexNode.x, nexNode.y) || this.intersectWall(currentNode.x, currentNode.y);
+      const isExternal = nexNode.x <= 0 || nexNode.y <= 0
+         || nexNode.x >= size_map.size_x || nexNode.y >= size_map.size_y;
       if (nexNode.x === currentNode.x && nexNode.y === currentNode.y) return false;
       if (nexNode.x > currentNode.x + currentNode.delta_x + 1 || nexNode.x < currentNode.x + currentNode.delta_x - 1) return false;
       if (nexNode.y > currentNode.y + currentNode.delta_y + 1 || nexNode.y < currentNode.y + currentNode.delta_y - 1) return false;
@@ -118,7 +121,7 @@ export class Solver {
       while (this.queue.length !== 0) {
          end = new Date().getTime();
          let currentState: PointState = this.queue.shift() as PointState;
-         if (end - start > 100000) {
+         if (end - start > 300000) {
             alert(`Time: ${end - start}`);
             this.stateGraph = graph;
             return graph;
