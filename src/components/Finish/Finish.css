@@ -1,4 +1,14 @@
 .Finish {
-    fill: lightgreen;
+    fill: white;
     opacity: 50%;
+}
+
+.FinishLine {
+    stroke: red;
+    stroke-width: 0.08;
+}
+
+.StartLine {
+    stroke: green;
+    stroke-width: 0.08;
 }

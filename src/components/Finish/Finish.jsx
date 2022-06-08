@@ -13,11 +13,8 @@ class Finish extends PureComponent {
       const { finish } = this.props;
       return (
          <g className="Finish">
-            {finish.map((finishPoint, i) => {
-               const { type, ...props } = finishPoint;
-               props.key = i;
-               return React.createElement(type, props);
-            })}
+            <path d={`M0 ${finish[0].y} l${finish[0].width} 0`} className={"StartLine"} key={finish[0].y} />
+            <path d={`M0 ${finish[0].y + 1} l${finish[0].width} 0`} className={"FinishLine"} key={finish[0].y + 1} />
          </g>
       );
    }

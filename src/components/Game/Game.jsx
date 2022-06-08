@@ -319,6 +319,10 @@ class Game extends PureComponent {
       this.updatePos(Math.round(cursopt.x), Math.round(cursopt.y));
    };
 
+   changeTrack = event => {
+      alert('Will be soon');
+   }
+
    goBack = event => {
       if (this.state.trace.length < 2) return;
       this.setState(s => {
@@ -346,7 +350,8 @@ class Game extends PureComponent {
             <h1>RaceTrack</h1>
             <button onClick={this.goBack}>Undo</button>
             <button className="reloadBtn" onClick={this.reloadGame}>New game</button>
-            <button className="reloadBtn" onClick={this.startSolve}>Check</button>
+            <button className="reloadBtn" onClick={this.changeTrack}>Change track</button>
+            <button className="reloadBtn" onClick={this.startSolve}>Get solution</button>
             <button className="reloadBtn" onClick={this.solutionChange}>Next solution</button>
             <button className="reloadBtn" onClick={this.optimalSolutionView}>View optimal solution</button>
             <svg
